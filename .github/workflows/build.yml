@@ -14,13 +14,14 @@ jobs:
     - name: Set up Node
       uses: actions/setup-node@v4
       with:
-        node-version: '24'
+        node-version: '20' # Bajamos a 20 para mayor estabilidad
         
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
+        java-package: jdk
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
@@ -28,29 +29,18 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Install Capacitor CLI
-      run: npm install @capacitor/cli @capacitor/core @capacitor/android
-      
     - name: Sync Capacitor
       run: npx cap sync android
-      
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        # Esto ayuda a evitar que Gradle use una caché potencialmente corrupta
-        cache-read-only: false 
       
     - name: Grant execute permission for gradlew
       run: chmod +x android/gradlew
       
     - name: Build with Gradle
-      # Ajustes críticos añadidos:
-      # --max-workers=1: Evita conflictos de escritura en archivos JAR
-      # --refresh-dependencies: Obliga a re-descargar si hay archivos corruptos
-      # --stacktrace: Útil para identificar si el fallo es de red o de sistema
+      # Forzamos el uso de Java 17 explícitamente para Gradle
       run: |
         cd android
-        ./gradlew assembleDebug --no-daemon --max-workers=1 --refresh-dependencies --stacktrace
+        export JAVA_HOME=$JAVA_HOME_17_X64
+        ./gradlew assembleDebug --no-daemon
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -58,27 +48,3 @@ jobs:
         name: app-debug
         path: android/app/build/outputs/apk/debug/app-debug.apk
         
-    - name: Grant execute permission for gradlew
-      run: chmod +x android/gradlew
-      
-    - name: Build with Gradle
-      run: cd android && ./gradlew assembleDebug --no-daemon --refresh-dependencies
-      
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug
-        path: android/app/build/outputs/apk/debug/app-debug.apk      
-    - name: Build with Gradle
-      run: cd android && ./gradlew assembleDebug
-      
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug
-        path: android/app/build/outputs/apk/debug/app-debug.apk      
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug
-        path: android/app/build/outputs/apk/debug/app-debug.apk
