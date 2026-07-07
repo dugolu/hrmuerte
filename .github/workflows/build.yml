@@ -26,6 +26,9 @@ jobs:
     - name: Install dependencies
       run: npm install
       
+    - name: Install Capacitor CLI
+      run: npm install @capacitor/cli @capacitor/core @capacitor/android
+      
     - name: Sync Capacitor
       run: npx cap sync android
       
@@ -35,6 +38,11 @@ jobs:
     - name: Build with Gradle
       run: cd android && ./gradlew assembleDebug
       
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: android/app/build/outputs/apk/debug/app-debug.apk      
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
