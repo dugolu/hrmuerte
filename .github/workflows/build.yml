@@ -1,8 +1,10 @@
 name: Build Capacitor APK
+
 on:
   push:
     branches: [ master ]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,7 +36,28 @@ jobs:
       
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
+      with:
+        # Esto ayuda a evitar que Gradle use una caché potencialmente corrupta
+        cache-read-only: false 
       
+    - name: Grant execute permission for gradlew
+      run: chmod +x android/gradlew
+      
+    - name: Build with Gradle
+      # Ajustes críticos añadidos:
+      # --max-workers=1: Evita conflictos de escritura en archivos JAR
+      # --refresh-dependencies: Obliga a re-descargar si hay archivos corruptos
+      # --stacktrace: Útil para identificar si el fallo es de red o de sistema
+      run: |
+        cd android
+        ./gradlew assembleDebug --no-daemon --max-workers=1 --refresh-dependencies --stacktrace
+      
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: android/app/build/outputs/apk/debug/app-debug.apk
+        
     - name: Grant execute permission for gradlew
       run: chmod +x android/gradlew
       
