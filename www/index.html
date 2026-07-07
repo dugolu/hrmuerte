@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Muerte</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: monospace; 
+      background: #000; 
+      color: #fff; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      min-height: 100vh;
+    }
+    .container { max-width: 500px; width: 100%; text-align: center; padding: 20px; }
+    h1 { margin-bottom: 30px; color: #fff; font-size: 28px; letter-spacing: 6px; }
+    button { 
+      background: #fff; 
+      color: #000; 
+      border: none; 
+      padding: 15px 30px; 
+      font-size: 16px; 
+      cursor: pointer; 
+      width: 100%;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .terms { 
+      text-align: left; 
+      font-size: 11px; 
+      color: #777; 
+      border: 1px solid #222; 
+      padding: 12px; 
+      margin: 20px 0;
+      height: 100px;
+      overflow-y: auto;
+    }
+    .reloj { display: none; }
+    .tiempo { 
+      display: grid; 
+      grid-template-columns: repeat(5, 1fr); 
+      gap: 10px; 
+      margin-top: 30px;
+    }
+    .bloque { border: 1px solid #fff; padding: 20px 5px; }
+    .numero { font-size: 42px; font-weight: bold; color: #fff; line-height: 1; }
+    .label { font-size: 10px; color: #777; margin-top: 8px; letter-spacing: 1px; }
+    input[type="date"] { 
+      width: 100%; 
+      padding: 14px; 
+      background: #000; 
+      border: 1px solid #fff; 
+      color: #fff; 
+      margin: 15px 0;
+      font-family: monospace;
+    }
+    .checkbox { margin: 20px 0; text-align: left; font-size: 13px; }
+    .id { font-size:9px; color:#222; margin-top:30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="setup">
+      <h1>HR MUERTE</h1>
+      <input type="date" id="fechaNacimiento">
+      <div class="terms">
+        <strong>TÉRMINOS Y CONDICIONES</strong><br><br>
+        1. App de entretenimiento. Resultados ficticios y aleatorios.<br>
+        2. No representa esperanza de vida real.<br>
+        3. Al continuar aceptas usar ID de dispositivo para guardar tu reloj.
+      </div>
+      <div class="checkbox">
+        <input type="checkbox" id="acepto"> 
+        <label for="acepto">Acepto los términos</label>
+      </div>
+      <button onclick="iniciar()">INICIAR</button>
+    </div>
+
+    <div class="reloj" id="reloj">
+      <h1>HR MUERTE</h1>
+      <div class="tiempo">
+        <div class="bloque"><div class="numero" id="anos">00</div><div class="label">AÑOS</div></div>
+        <div class="bloque"><div class="numero" id="meses">00</div><div class="label">MESES</div></div>
+        <div class="bloque"><div class="numero" id="dias">00</div><div class="label">DÍAS</div></div>
+        <div class="bloque"><div class="numero" id="horas">00</div><div class="label">HORAS</div></div>
+        <div class="bloque"><div class="numero" id="segundos">00</div><div class="label">SEGUNDOS</div></div>
+      </div>
+      <div class="id">ID: <span id="deviceId"></span></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Device } from '@capacitor/device';
+    import { Preferences } from '@capacitor/preferences';
+    
+    let intervalo;
+    let deviceIdGlobal = '';
+
+    async function iniciar() {
+      const fecha = document.getElementById('fechaNacimiento').value;
+      const acepto = document.getElementById('acepto').checked;
+      if (!fecha) return alert('Ingresa fecha de nacimiento');
+      if (!acepto) return alert('Debes aceptar los términos');
+
+      const info = await Device.getId();
+      deviceIdGlobal = info.identifier;
+      document.getElementById('deviceId').textContent = deviceIdGlobal.slice(0,8);
+      
+      const { value } = await Preferences.get({ key: deviceIdGlobal });
+      
+      let fechaFinal;
+      if (value) {
+        fechaFinal = new Date(parseInt(value));
+      } else {
+        const nacimiento = new Date(fecha);
+        const esperanzaVida = 70 + Math.floor(Math.random() * 20);
+        fechaFinal = new Date(nacimiento);
+        fechaFinal.setFullYear(nacimiento.getFullYear() + esperanzaVida);
+        await Preferences.set({ key: deviceIdGlobal, value: fechaFinal.getTime().toString() });
+      }
+
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('reloj').style.display = 'block';
+      actualizarReloj(fechaFinal);
+      intervalo = setInterval(() => actualizarReloj(fechaFinal), 1000);
+    }
+    
+    function actualizarReloj(fechaFinal) {
+      const ahora = new Date();
+      let diferencia = fechaFinal - ahora;
+      if (diferencia < 0) diferencia = 0;
+      
+      const s = Math.floor(diferencia / 1000);
+      const dias = Math.floor(s / 86400);
+      const anos = Math.floor(dias / 365.25);
+      const meses = Math.floor((dias % 365.25) / 30.44);
+      const diasRestantes = Math.floor((dias % 365.25) % 30.44);
+      const horas = Math.floor(s / 3600) % 24;
+      const segundos = s % 60;
+      
+      document.getElementById('anos').textContent = String(anos).padStart(2,'0');
+      document.getElementById('meses').textContent = String(meses).padStart(2,'0');
+      document.getElementById('dias').textContent = String(diasRestantes).padStart(2,'0');
+      document.getElementById('horas').textContent = String(horas).padStart(2,'0');
+      document.getElementById('segundos').textContent = String(segundos).padStart(2,'0');
+    }
+    
+    window.onload = async () => {
+      const info = await Device.getId();
+      deviceIdGlobal = info.identifier;
+      const { value } = await Preferences.get({ key: deviceIdGlobal });
+      if (value) {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('reloj').style.display = 'block';
+        document.getElementById('deviceId').textContent = deviceIdGlobal.slice(0,8);
+        const fechaFinal = new Date(parseInt(value));
+        actualizarReloj(fechaFinal);
+        intervalo = setInterval(() => actualizarReloj(fechaFinal), 1000);
+      }
+    }
+    
+    window.iniciar = iniciar;
+  </script>
+</body>
+</html>
