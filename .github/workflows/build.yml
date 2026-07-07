@@ -28,10 +28,7 @@ jobs:
       # PASO CRÍTICO: Aseguramos que Capacitor esté instalado globalmente para npx
       - name: Install Capacitor CLI
         run: npm install -D @capacitor/cli @capacitor/android @capacitor/core
-        
-      - name: Build web
-        run: npm run build
-        
+
       - name: Sync Capacitor
         run: npx cap sync android
         
